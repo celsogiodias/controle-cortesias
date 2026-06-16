@@ -1,0 +1,212 @@
+{% extends 'base.html' %}
+{% block title %}Cortesias{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4><i class="fas fa-ticket-alt me-2"></i>Cortesias Disponíveis</h4>
+    <span class="badge bg-secondary fs-6">{{ cortesias|length }} itens</span>
+</div>
+
+<div class="row g-3" id="gridCortesias">
+    {% for c in cortesias %}
+    {% set status_class = c.status_atual if c.status_atual is defined else c.status %}
+    <div class="col-6 col-md-4 col-lg-2 cortesia-item" 
+         data-id="{{ c.id }}"
+         data-categoria="{{ c.categoria }}"
+         data-numero="{{ c.numero }}"
+         data-cor="{{ c.cor }}"
+         data-status="{{ status_class }}">
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Modal Emprestar -->
+<div class="modal fade" id="modalEmprestar" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title"><i class="fas fa-hand-holding me-2"></i>Registrar Empréstimo</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="formEmprestar">
+                    <input type="hidden" id="cortesia_id" value="">
+                    <div class="mb-3">
+                        <label class="form-label">Nome da Pessoa</label>
+                        <input type="text" class="form-control" id="nome" required placeholder="Nome completo">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Telefone (com DDD)</label>
+                        <input type="text" class="form-control" id="telefone" required placeholder="(31) 99999-8888">
+                    </div>
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i> Prazo máximo: <strong>7 dias</strong>
+                    </div>
+                </form>
+                <div id="msgErro" class="alert alert-danger d-none"></div>
+                <div id="msgSucesso" class="alert alert-success d-none"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button class="btn btn-primary" onclick="submitEmprestimo()">
+                    <i class="fas fa-check"></i> Confirmar Empréstimo
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Devolver -->
+<div class="modal fade" id="modalDevolver" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title"><i class="fas fa-undo me-2"></i>Registrar Devolução</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="infoDevolucao">
+                    <p><strong>Cortesia:</strong> <span id="infoCategoria"></span> nº <span id="infoNumero"></span></p>
+                    <p><strong>Com:</strong> <span id="infoNome"></span></p>
+                    <p><strong>Telefone:</strong> <span id="infoTelefone"></span></p>
+                    <p><strong>Retirada em:</strong> <span id="infoRetirada"></span></p>
+                    <p><strong>Previsão de devolução:</strong> <span id="infoPrevisao"></span></p>
+                    <p id="infoAtraso" class="text-danger fw-bold d-none"></p>
+                </div>
+                <input type="hidden" id="emprestimo_id" value="">
+                <div id="msgErroDev" class="alert alert-danger d-none"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button class="btn btn-success" onclick="submitDevolucao()">
+                    <i class="fas fa-check"></i> Confirmar Devolução
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const CORES = {
+    'Lagoa Silva': '#FFD700',
+    'Clube Faisão': '#333333',
+    'Usipa': '#C3B091'
+};
+
+const STATUS_LABEL = {
+    'disponivel': '<span class="badge" style="background-color:#28a745;color:#fff">✅ Disponível</span>',
+    'emprestada': '<span class="badge" style="background-color:#ffc107;color:#333">👤 Com alguém</span>',
+    'atrasada': '<span class="badge" style="background-color:#dc3545;color:#fff">🔴 Atrasada</span>'
+};
+
+const STATUS_MODAL = {
+    'disponivel': 'modalEmprestar',
+    'emprestada': 'modalDevolver',
+    'atrasada': 'modalDevolver'
+};
+
+document.querySelectorAll('.cortesia-item').forEach(function(el) {
+    var id = el.getAttribute('data-id');
+    var categoria = el.getAttribute('data-categoria');
+    var numero = el.getAttribute('data-numero');
+    var cor = CORES[categoria] || '#ccc';
+    var status = el.getAttribute('data-status');
+    var textoCor = (cor === '#333333') ? '#fff' : '#333';
+    var modal = STATUS_MODAL[status] || 'modalEmprestar';
+    var funcaoClique = (status === 'disponivel')
+        ? "setCortesiaId(" + id + ")"
+        : "carregarInfoDevolucao(" + id + ")";
+
+    el.setAttribute('data-bs-toggle', 'modal');
+    el.setAttribute('data-bs-target', '#' + modal);
+    el.setAttribute('onclick', funcaoClique);
+
+    el.innerHTML = '<div class="card card-cortesia ' + status + '" style="background-color:' + cor + ';color:' + textoCor + '">'
+        + '<div class="card-body text-center d-flex flex-column align-items-center justify-content-center" style="min-height:130px">'
+        + '<span style="font-size:2.2rem;font-weight:800;line-height:1">' + numero + '</span>'
+        + '<small style="font-size:0.7rem;opacity:0.85;font-weight:600;text-transform:uppercase;letter-spacing:0.5px">' + categoria + '</small>'
+        + '<span class="mt-2">' + STATUS_LABEL[status] + '</span>'
+        + '</div></div>';
+});
+
+let cortesiaId = 0;
+
+function setCortesiaId(id) {
+    cortesiaId = id;
+    document.getElementById('cortesia_id').value = id;
+    document.getElementById('msgErro').classList.add('d-none');
+    document.getElementById('msgSucesso').classList.add('d-none');
+    document.getElementById('formEmprestar').reset();
+}
+
+function submitEmprestimo() {
+    const nome = document.getElementById('nome').value.trim();
+    const telefone = document.getElementById('telefone').value.trim();
+    if (!nome || !telefone) {
+        document.getElementById('msgErro').textContent = 'Preencha todos os campos.';
+        document.getElementById('msgErro').classList.remove('d-none');
+        return;
+    }
+    fetch('/api/emprestar', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({cortesia_id: cortesiaId, nome: nome, telefone: telefone})
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.error) {
+            document.getElementById('msgErro').textContent = data.error;
+            document.getElementById('msgErro').classList.remove('d-none');
+        } else {
+            document.getElementById('msgSucesso').textContent = data.mensagem || 'Empréstimo registrado!';
+            document.getElementById('msgSucesso').classList.remove('d-none');
+            document.getElementById('formEmprestar').reset();
+            setTimeout(() => location.reload(), 1500);
+        }
+    });
+}
+
+function carregarInfoDevolucao(cortesia_id) {
+    document.getElementById('msgErroDev').classList.add('d-none');
+    fetch('/api/cortesia-status?cortesia_id=' + cortesia_id)
+    .then(r => r.json())
+    .then(data => {
+        if (data.error) return;
+        document.getElementById('infoCategoria').textContent = data.categoria;
+        document.getElementById('infoNumero').textContent = data.numero;
+        if (data.emprestimo) {
+            document.getElementById('emprestimo_id').value = data.emprestimo.id;
+            document.getElementById('infoNome').textContent = data.emprestimo.nome;
+            document.getElementById('infoTelefone').textContent = data.emprestimo.telefone;
+            document.getElementById('infoRetirada').textContent = data.emprestimo.data_retirada;
+            document.getElementById('infoPrevisao').textContent = data.emprestimo.data_prevista;
+            const atrasoEl = document.getElementById('infoAtraso');
+            if (data.emprestimo.dias_atraso > 0) {
+                atrasoEl.textContent = '⚠️ ' + data.emprestimo.dias_atraso + ' dia(s) de atraso!';
+                atrasoEl.classList.remove('d-none');
+            } else {
+                atrasoEl.classList.add('d-none');
+            }
+        }
+    });
+}
+
+function submitDevolucao() {
+    const empId = document.getElementById('emprestimo_id').value;
+    if (!empId) return;
+    fetch('/api/devolver', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({emprestimo_id: parseInt(empId)})
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.error) {
+            document.getElementById('msgErroDev').textContent = data.error;
+            document.getElementById('msgErroDev').classList.remove('d-none');
+        } else {
+            setTimeout(() => location.reload(), 500);
+        }
+    });
+}
+</script>
+{% endblock %}
