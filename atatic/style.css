@@ -1,0 +1,96 @@
+body {
+    background: #f0f2f5;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Cards de Cortesia */
+.card-cortesia {
+    transition: all 0.3s ease;
+    cursor: pointer;
+    min-height: 140px;
+    border-radius: 12px;
+    border: 3px solid transparent;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    user-select: none;
+}
+
+.card-cortesia:hover {
+    transform: scale(1.05);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+}
+
+.card-cortesia:active {
+    transform: scale(0.98);
+}
+
+.numero-cortesia {
+    font-size: 2.2rem;
+    font-weight: 800;
+    line-height: 1;
+}
+
+.categoria-label {
+    font-size: 0.7rem;
+    opacity: 0.85;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Status Badges */
+.disponivel-badge {
+    background-color: #28a745 !important;
+    color: #fff !important;
+    font-size: 0.7rem;
+}
+
+.emprestada-badge {
+    background-color: #ffc107 !important;
+    color: #333 !important;
+    font-size: 0.7rem;
+}
+
+.atrasada-badge {
+    background-color: #dc3545 !important;
+    color: #fff !important;
+    font-size: 0.7rem;
+    animation: pulse-badge 1.5s ease-in-out infinite;
+}
+
+/* Animação de Atraso */
+@keyframes pulse-badge {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+}
+
+.card-cortesia.atrasada {
+    animation: pulse-border 2s ease-in-out infinite;
+    border: 3px solid #dc3545;
+}
+
+@keyframes pulse-border {
+    0%, 100% { border-color: #dc3545; box-shadow: 0 0 0 0 rgba(220,53,69,0.4); }
+    50% { border-color: #ff6b6b; box-shadow: 0 0 0 8px rgba(220,53,69,0); }
+}
+
+/* Tabelas */
+.table th {
+    font-weight: 600;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.table td {
+    vertical-align: middle;
+}
+
+/* Responsivo */
+@media (max-width: 576px) {
+    .numero-cortesia {
+        font-size: 1.6rem;
+    }
+    .card-cortesia {
+        min-height: 110px;
+    }
+}
